@@ -32,13 +32,18 @@ var app = (function () {
         console.info('Connecting to WS...');
         var socket = new SockJS('/stompendpoint');
         stompClient = Stomp.over(socket);
-        
-        //subscribe to /topic/TOPICXX when connections succeed
+
+        // Suscribirse al tópico "/topic/newpoint"
         stompClient.connect({}, function (frame) {
             console.log('Connected: ' + frame);
-            stompClient.subscribe('/topic/TOPICXX', function (eventbody) {
-                
-                
+            stompClient.subscribe('/topic/newpoint', function (eventbody) {
+                // Procesar el evento recibido
+                var pointData = JSON.parse(eventbody.body);
+                var x = pointData.x;
+                var y = pointData.y;
+                // Mostrar las coordenadas en un mensaje de alerta
+                alert('Nueva coordenada recibida - X: ' + x + ', Y: ' + y);
+                // Puedes realizar otras acciones con las coordenadas recibidas
             });
         });
 
@@ -58,9 +63,11 @@ var app = (function () {
         publishPoint: function(px,py){
             var pt=new Point(px,py);
             console.info("publishing point at "+pt);
-            addPointToCanvas(pt);
+            //addPointToCanvas(pt); //no es necesaria si solo deseas publicar las coordenadas en tiempo real.
 
             //publicar el evento
+            // Enviar el objeto Point como JSON al servidor en el tópico "/topic/newpoint"
+            stompClient.send("/topic/newpoint", {}, JSON.stringify(pt));
         },
 
         disconnect: function () {
