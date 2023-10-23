@@ -27,7 +27,7 @@ var app = (function () {
         };
     };
 
-
+    /* // connectAndSubscribe con un tópico estatico
     var connectAndSubscribe = function () {
         console.info('Connecting to WS...');
         var socket = new SockJS('/stompendpoint');
@@ -36,6 +36,7 @@ var app = (function () {
         // Suscribirse al tópico "/topic/newpoint"
         stompClient.connect({}, function (frame) {
             console.log('Connected: ' + frame);
+            // Se encarga de manejar los mensajes entrantes en el tópico "/topic/newpoint" y se ejecuta cuando se recibe un mensaje en ese tópico
             stompClient.subscribe('/topic/newpoint', function (eventbody) {
                 // Procesar el evento recibido
                 var pointData = JSON.parse(eventbody.body);
@@ -51,10 +52,33 @@ var app = (function () {
                 ctx.fill();
             });
         });
+    };*/
 
+    // connectAndSubscribe para que se conecte al tópico con un nombre dinámico basado en el identificador ingresado por el usuario
+    var connectAndSubscribe = function () {
+        var drawingId = document.getElementById("drawingId").value; // Obtener el identificador ingresado
+        var topicName = "/topic/newpoint." + drawingId; // Construir el nombre del tópico dinámico
+
+        var socket = new SockJS('/stompendpoint');
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, function (frame) {
+            console.log('Connected: ' + frame);
+            stompClient.subscribe(topicName, function (eventbody) {
+                var pointData = JSON.parse(eventbody.body);
+                var x = pointData.x;
+                var y = pointData.y;
+
+                var canvas = document.getElementById("canvas");
+                var ctx = canvas.getContext('2d');
+                ctx.beginPath();
+                ctx.arc(x, y, 1, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+
+        });
     };
-    
-    
+
 
     return {
 
@@ -71,6 +95,7 @@ var app = (function () {
             connectAndSubscribe();
         },
 
+        /*// publishPoint que envia coordenadas un tópico estatico.
         publishPoint: function(px,py){
             var pt=new Point(px,py);
             console.info("publishing point at "+pt);
@@ -79,6 +104,15 @@ var app = (function () {
             //publicar el evento
             // Enviar el objeto Point como JSON al servidor en el tópico "/topic/newpoint"
             stompClient.send("/topic/newpoint", {}, JSON.stringify(pt));
+        },*/
+
+        // publishPoint que envia coordenadas al tópico asociado al identificador ingresado por el usuario.
+        publishPoint: function (px, py) {
+            var drawingId = document.getElementById("drawingId").value; // Obtener el identificador ingresado
+            var topicName = "/topic/newpoint." + drawingId; // Construir el nombre del tópico dinámico
+
+            var pt = new Point(px, py);
+            stompClient.send(topicName, {}, JSON.stringify(pt)); // Enviar el punto al tópico específico
         },
 
         disconnect: function () {
@@ -87,7 +121,9 @@ var app = (function () {
             }
             setConnected(false);
             console.log("Disconnected");
-        }
+        },
+
+        connectAndSubscribe: connectAndSubscribe
     };
 
 })();
