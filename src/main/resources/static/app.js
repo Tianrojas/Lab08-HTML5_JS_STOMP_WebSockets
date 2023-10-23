@@ -16,8 +16,31 @@ var app = (function () {
         ctx.arc(point.x, point.y, 3, 0, 2 * Math.PI);
         ctx.stroke();
     };
-    
-    
+
+    var drawPolygon = function (polygonData) {
+        var canvas = document.getElementById("canvas");
+        var ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        ctx.beginPath();
+        if (polygonData.length > 0) {
+            ctx.moveTo(polygonData[0].x, polygonData[0].y);
+        }
+
+        for (var i = 1; i < polygonData.length; i++) {
+            ctx.lineTo(polygonData[i].x, polygonData[i].y);
+        }
+
+        if (polygonData.length > 0) {
+            ctx.lineTo(polygonData[0].x, polygonData[0].y);
+        }
+
+        ctx.fillStyle = 'rgba(0, 0, 255, 0.3)';
+        ctx.fill();
+    }
+
+
+
     var getMousePosition = function (evt) {
         canvas = document.getElementById("canvas");
         var rect = canvas.getBoundingClientRect();
@@ -54,16 +77,16 @@ var app = (function () {
         });
     };*/
 
-    // connectAndSubscribe para que se conecte al tópico con un nombre dinámico basado en el identificador ingresado por el usuario
+    /*// connectAndSubscribe para que se conecte al tópico con un nombre dinámico basado en el identificador ingresado por el usuario
     var connectAndSubscribe = function () {
         var drawingId = document.getElementById("drawingId").value; // Obtener el identificador ingresado
         var topicName = "/topic/newpoint." + drawingId; // Construir el nombre del tópico dinámico
 
         var socket = new SockJS('/stompendpoint');
         stompClient = Stomp.over(socket);
-
         stompClient.connect({}, function (frame) {
             console.log('Connected: ' + frame);
+            //Me subscribo para recibir puntos, no es necesario para enviarlos
             stompClient.subscribe(topicName, function (eventbody) {
                 var pointData = JSON.parse(eventbody.body);
                 var x = pointData.x;
@@ -77,7 +100,33 @@ var app = (function () {
             });
 
         });
+    };*/
+
+    var connectAndSubscribe = function () {
+        var drawingId = document.getElementById("drawingId").value;
+        var topicName = "/topic/newpoint." + drawingId;
+        var polygonTopicName = "/topic/newpolygon." + drawingId;
+
+        var socket = new SockJS('/stompendpoint');
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, function (frame) {
+            console.log('Connected: ' + frame);
+
+            stompClient.subscribe(topicName, function (eventbody) {
+                var pointData = JSON.parse(eventbody.body);
+                addPointToCanvas(pointData);
+            });
+
+            // Suscribirse al tópico de polígonos y procesar los datos para dibujar el polígono
+            stompClient.subscribe(polygonTopicName, function (eventbody) {
+                var polygonData = JSON.parse(eventbody.body);
+                drawPolygon(polygonData.points);
+            });
+
+        });
     };
+
 
 
     return {
@@ -106,13 +155,21 @@ var app = (function () {
             stompClient.send("/topic/newpoint", {}, JSON.stringify(pt));
         },*/
 
-        // publishPoint que envia coordenadas al tópico asociado al identificador ingresado por el usuario.
+        /*// publishPoint que envia coordenadas al tópico asociado al identificador ingresado por el usuario.
         publishPoint: function (px, py) {
             var drawingId = document.getElementById("drawingId").value; // Obtener el identificador ingresado
             var topicName = "/topic/newpoint." + drawingId; // Construir el nombre del tópico dinámico
 
             var pt = new Point(px, py);
             stompClient.send(topicName, {}, JSON.stringify(pt)); // Enviar el punto al tópico específico
+        },*/
+
+        // publishPoint para enviar puntos al servidor en lugar de tópico de dibujo
+        publishPoint: function (px, py) {
+            var drawingId = document.getElementById("drawingId").value;
+            var topicName = "/app/newpoint." + drawingId;
+            var pt = new Point(px, py);
+            stompClient.send(topicName, {}, JSON.stringify(pt));
         },
 
         disconnect: function () {
