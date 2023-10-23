@@ -42,8 +42,13 @@ var app = (function () {
                 var x = pointData.x;
                 var y = pointData.y;
                 // Mostrar las coordenadas en un mensaje de alerta
-                alert('Nueva coordenada recibida - X: ' + x + ', Y: ' + y);
-                // Puedes realizar otras acciones con las coordenadas recibidas
+                //alert('Nueva coordenada recibida - X: ' + x + ', Y: ' + y);
+                // Dibujar un punto en el <canvas> con las coordenadas recibidas
+                var canvas = document.getElementById("canvas");
+                var ctx = canvas.getContext('2d');
+                ctx.beginPath();
+                ctx.arc(x, y, 1, 0, 2 * Math.PI);
+                ctx.fill();
             });
         });
 
@@ -54,8 +59,14 @@ var app = (function () {
     return {
 
         init: function () {
-            var can = document.getElementById("canvas");
-            
+            var canvas = document.getElementById("canvas");
+
+            // Configurar el evento clic en el canvas
+            canvas.addEventListener("click", function (evt) {
+                var mousePos = getMousePosition(evt);
+                app.publishPoint(mousePos.x, mousePos.y);
+            });
+
             //websocket connection
             connectAndSubscribe();
         },
